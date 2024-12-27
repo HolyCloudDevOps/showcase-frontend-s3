@@ -35,14 +35,14 @@ jobs:
         env:
           TF_WORKSPACE: ${{ github.ref_name }} # Назва робочого простору на основі гілки
         run: |
-          terraform init \
+          terraform -chdir=infra init \
             -backend-config="organization=hollydevops" \
             -backend-config="workspaces.name=${{ github.ref_name }}"
-          terraform plan -out=tfplan
+          terraform -chdir=infra plan -out=tfplan
 
       - name: Terraform Apply
         if: github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage'
         env:
           TF_WORKSPACE: ${{ github.ref_name }}
         run: |
-          terraform apply -auto-approve tfplan
+          terraform -chdir=infra apply -auto-approve tfplan
