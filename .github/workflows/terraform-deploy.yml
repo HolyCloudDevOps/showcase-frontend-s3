@@ -36,8 +36,6 @@ jobs:
           TF_WORKSPACE: ${{ github.ref_name }} # Назва робочого простору на основі гілки
         run: |
           terraform -chdir=infra init \
-            -backend-config="organization=hollydevops" \
-            -backend-config="workspaces.name=${{ github.ref_name }}"
           terraform -chdir=infra plan -out=tfplan
 
       - name: Terraform Apply
