@@ -41,7 +41,7 @@ jobs:
           terraform -chdir=infra plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage'
+        if: success() && (github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage')
         env:
           TF_WORKSPACE: ${{ github.ref_name }}
         run: |
