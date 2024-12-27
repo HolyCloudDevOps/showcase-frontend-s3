@@ -31,13 +31,15 @@ jobs:
           TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
         run: echo "Terraform Cloud Token set"
 
-      # Крок 4: Виконання Terraform у Terraform Cloud
-      - name: Terraform Init and Plan
+      # Крок 3: Ініціалізація Terraform
+      - name: Terraform Init
         env:
-          TF_WORKSPACE: ${{ github.ref_name }} # Назва робочого простору на основі гілки
-        run: |
-          terraform -chdir=infra init \
-          terraform -chdir=infra plan -out=tfplan
+          TF_WORKSPACE: ${{ github.ref_name }}
+        run: terraform -chdir=infra init
+
+      # Крок 4: Планування Terraform
+      - name: Terraform Plan
+        run: terraform -chdir=infra plan -out=tfplan
 
       - name: Terraform Apply
         if: success() && (github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage')
