@@ -2,12 +2,7 @@ terraform {
   cloud {
     organization = "hollydevops"
     workspaces {
-      name = "workspace-${var.environment}"
+      name = "default"
     }
   }
-}
-
-variable "environment" {
-  description = "Environment name"
-  default     = "dev"
 }

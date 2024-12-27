@@ -4,15 +4,18 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'infra/**' # Тільки зміни в цій папці
+      - 'infra/**' # Запускається тільки при змінах у цій папці
     branches:
       - main
       - dev
-      - stage # Запускати для цих гілок
+      - stage # Запуск для основних гілок
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
 
     steps:
       # Крок 1: Клонування репозиторію
@@ -25,25 +28,32 @@ jobs:
         with:
           terraform_version: 1.5.6
 
-      # Крок 3: Встановлення змінної оточення для Terraform Cloud Token
-      - name: Set Terraform Cloud Token
-        env:
-          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
-        run: echo "Terraform Cloud Token set"
+      # Крок 3: Динамічний вибір воркспейсу
+      - name: Set Terraform Workspace
+        id: set-workspace
+        run: |
+          case "${{ github.ref_name }}" in
+            "main") echo "TF_WORKSPACE=prod" >> $GITHUB_ENV ;;
+            "stage") echo "TF_WORKSPACE=stage" >> $GITHUB_ENV ;;
+            "dev") echo "TF_WORKSPACE=dev" >> $GITHUB_ENV ;;
+            *) echo "Invalid branch. Exiting." && exit 1 ;;
+          esac
+        shell: bash
 
       # Крок 4: Ініціалізація Terraform
       - name: Terraform Init
-        env:
-          TF_WORKSPACE: ${{ github.ref_name }}
         run: terraform -chdir=infra init
 
-      # Крок 5: Планування Terraform
-      - name: Terraform Plan
-        run: terraform -chdir=infra plan -out=tfplan      
-
-      - name: Terraform Apply
-        if: success() && (github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage')
-        env:
-          TF_WORKSPACE: ${{ github.ref_name }}
+      # Крок 5: Вибір або створення воркспейсу
+      - name: Select or Create Workspace
         run: |
-          terraform -chdir=infra apply -auto-approve tfplan
+          terraform -chdir=infra workspace select ${{ env.TF_WORKSPACE }} || terraform -chdir=infra workspace new ${{ env.TF_WORKSPACE }}
+
+      # Крок 6: Планування Terraform
+      - name: Terraform Plan
+        run: terraform -chdir=infra plan -out=tfplan
+
+      # Крок 7: Застосування змін
+      - name: Terraform Apply
+        if: github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage'
+        run: terraform -chdir=infra apply -auto-approve tfplan
