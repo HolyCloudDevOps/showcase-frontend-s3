@@ -1,0 +1,48 @@
+name: Terraform Cloud Deployment
+
+on:
+  push:
+    paths:
+      - 'infra/**' # Тільки зміни в цій папці
+    branches:
+      - main
+      - dev
+      - stage # Запускати для цих гілок
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Крок 1: Клонування репозиторію
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Крок 2: Установка Terraform CLI
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.6
+
+      # Крок 3: Встановлення змінної оточення для Terraform Cloud Token
+      - name: Set Terraform Cloud Token
+        env:
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
+        run: echo "Terraform Cloud Token set"
+
+      # Крок 4: Виконання Terraform у Terraform Cloud
+      - name: Terraform Init and Plan
+        env:
+          TF_WORKSPACE: ${{ github.ref_name }} # Назва робочого простору на основі гілки
+        run: |
+          terraform -chdir=infra init \
+            -backend-config="organization=hollydevops" \
+            -backend-config="workspaces.name=${{ github.ref_name }}"
+          terraform -chdir=infra plan -out=tfplan
+
+      - name: Terraform Apply
+        if: success() && (github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage')
+        env:
+          TF_WORKSPACE: ${{ github.ref_name }}
+        run: |
+          terraform -chdir=infra apply -auto-approve tfplan
