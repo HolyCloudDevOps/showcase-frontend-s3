@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'infra/**' # Запускається тільки при змінах у цій папці
+      - 'infra/**' # Тільки зміни в цій папці
     branches:
       - main
       - dev
-      - stage # Запуск для основних гілок
+      - stage # Запускати для цих гілок
 
 jobs:
   terraform:
@@ -24,42 +24,26 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
-      
+
       # Крок 3: Встановлення змінної оточення для Terraform Cloud Token
       - name: Set Terraform Cloud Token
         env:
           TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
         run: echo "Terraform Cloud Token set"
 
-      # Крок 4: Динамічний вибір воркспейсу
-      - name: Set Terraform Workspace
-        id: set-workspace
-        run: |
-          case "${{ github.ref_name }}" in
-            "main") echo "TF_WORKSPACE=prod" >> $GITHUB_ENV ;;
-            "stage") echo "TF_WORKSPACE=stage" >> $GITHUB_ENV ;;
-            "dev") echo "TF_WORKSPACE=dev" >> $GITHUB_ENV ;;
-            *) echo "Invalid branch. Exiting." && exit 1 ;;
-          esac
-        shell: bash
-
-      # Крок 5: Ініціалізація Terraform
+      # Крок 4: Ініціалізація Terraform
       - name: Terraform Init
         env:
-          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
           TF_WORKSPACE: ${{ github.ref_name }}
         run: terraform -chdir=infra init
 
-      # Крок 6: Вибір або створення воркспейсу
-      - name: Select or Create Workspace
-        run: |
-          terraform -chdir=infra workspace select ${{ env.TF_WORKSPACE }} || terraform -chdir=infra workspace new ${{ env.TF_WORKSPACE }}
-
-      # Крок 7: Планування Terraform
+      # Крок 5: Планування Terraform
       - name: Terraform Plan
-        run: terraform -chdir=infra plan -out=tfplan
+        run: terraform -chdir=infra plan -out=tfplan      
 
-      # Крок 8: Застосування змін
       - name: Terraform Apply
-        if: github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage'
-        run: terraform -chdir=infra apply -auto-approve tfplan
+        if: success() && (github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage')
+        env:
+          TF_WORKSPACE: ${{ github.ref_name }}
+        run: |
+          terraform -chdir=infra apply -auto-approve tfplan
