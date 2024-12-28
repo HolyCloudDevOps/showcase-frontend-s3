@@ -4,46 +4,52 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'infra/**' # Тільки зміни в цій папці
+      - 'infra/**'
     branches:
       - main
       - dev
-      - stage # Запускати для цих гілок
+      - stage
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
 
     steps:
-      # Крок 1: Клонування репозиторію
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Крок 2: Установка Terraform CLI
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
 
-      # Крок 3: Встановлення змінної оточення для Terraform Cloud Token
       - name: Set Terraform Cloud Token
         env:
-          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }} # Використовуємо токен з GitHub Secrets
         run: echo "Terraform Cloud Token set"
 
-      # Крок 4: Ініціалізація Terraform
+      # Крок 1: Ініціалізація Terraform
       - name: Terraform Init
         env:
           TF_WORKSPACE: ${{ github.ref_name }}
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }} # Передаємо токен для Terraform Cloud
         run: terraform -chdir=infra init
 
-      # Крок 5: Планування Terraform
-      - name: Terraform Plan
-        run: terraform -chdir=infra plan -out=tfplan      
+      # Крок 2: Перемикання на відповідний робочий простір в Terraform Cloud
+      - name: Select Workspace
+        env:
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }} # Передаємо токен для Terraform Cloud
+        run: terraform -chdir=infra workspace select ${{ github.ref_name }}
 
+      # Крок 3: Планування Terraform
+      - name: Terraform Plan
+        env:
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }} # Передаємо токен для Terraform Cloud
+        run: terraform -chdir=infra plan -out=tfplan
+
+      # Крок 4: Застосування Terraform Plan
       - name: Terraform Apply
         if: success() && (github.ref_name == 'main' || github.ref_name == 'dev' || github.ref_name == 'stage')
         env:
-          TF_WORKSPACE: ${{ github.ref_name }}
-        run: |
-          terraform -chdir=infra apply -auto-approve tfplan
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }} # Передаємо токен для Terraform Cloud
+        run: terraform -chdir=infra apply -auto-approve tfplan
