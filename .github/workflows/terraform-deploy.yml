@@ -45,6 +45,9 @@ jobs:
 
       # Крок 5: Ініціалізація Terraform
       - name: Terraform Init
+        env:
+          TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TF_WORKSPACE: ${{ github.ref_name }}
         run: terraform -chdir=infra init
 
       # Крок 6: Вибір або створення воркспейсу
