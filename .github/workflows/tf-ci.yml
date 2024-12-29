@@ -24,7 +24,9 @@ jobs:
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           run: |
             terraform -chdir=infra init
-            terraform -chdir=infra plan
+            terraform -chdir=infra plan -out=tfplan
 
         - name: Terrafrom apply
-          run: terraform apply -chdir=infra -auto-approve
+          run: |
+            cd infra
+            terraform apply -auto-approve tfplan
