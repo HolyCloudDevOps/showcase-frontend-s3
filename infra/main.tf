@@ -1,12 +1,12 @@
 terraform {
   backend "s3" {
-    bucket                  = "terraform-state-file-testproject "
+    bucket                  = "terraform-state-file-testproject"
     dynamodb_table          = "terraform-locks"
-    key                     = "${var.env}/terraform.tfstate"
-    region                  = var.region
+    key                     = "terraform.tfstate"
+    region                  = "us-east-1"
   }
 }
 
 provider "aws" {
-  region = var.region
+  region = us-east-1
 }

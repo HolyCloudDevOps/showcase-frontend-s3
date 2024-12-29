@@ -25,3 +25,6 @@ jobs:
           run: |
             terraform -chdir=infra init
             terraform -chdir=infra plan
+
+        - name: Terrafrom apply
+          run: terraform apply -chdir=infra -auto-approve
