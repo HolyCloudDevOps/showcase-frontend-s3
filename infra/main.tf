@@ -14,7 +14,9 @@ provider "aws" {
 
 resource "aws_s3_bucket" "frontend_hosting" {
   bucket = "shfdzscgdsvfedasdfbahebf"
-  acl    = "public-read"
+  object_lock_configuration {
+    object_lock_enabled = "Enabled"
+  }
 
   website {
     index_document = "index.html"
@@ -24,6 +26,14 @@ resource "aws_s3_bucket" "frontend_hosting" {
   tags = {
     Environment = "test"
     Project     = "test"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "frontend_ownership" {
+  bucket = aws_s3_bucket.frontend_hosting.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
