@@ -3,10 +3,10 @@ terraform {
     bucket                  = "terraform-state-file-testproject "
     dynamodb_table          = "terraform-locks"
     key                     = "${var.env}/terraform.tfstate"
-    region                  = var.region
+    region                  = "us-east-1"
   }
 }
 
 provider "aws" {
-  region = var.region
+  region = us-east-1
 }
