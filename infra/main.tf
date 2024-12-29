@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     bucket                  = "terraform-state-file-testproject "
     dynamodb_table          = "terraform-locks"
-    key                     = "${var.env}/terraform.tfstate"
+    key                     = "terraform.tfstate"
     region                  = "us-east-1"
   }
 }
